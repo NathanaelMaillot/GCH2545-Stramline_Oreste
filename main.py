@@ -1,0 +1,43 @@
+from cylinder_flow import ( 
+    creer_maillage,
+    construire_matrice_systeme,
+    resoudre_laplace,
+    calculer_vitesses,
+    solution_analytique,
+    erreur_L2,
+    calculer_coefficients_pression,
+    tracer_lignes_courant,
+    tracer_champ_vitesse,
+    analyse_convergence,
+    tracer_convergence
+)
+# changer pr import toute les fonctions auto avec *
+if __name__ == "__main__":
+    # Paramètres du problème donnés
+    U_inf = 10
+    R = 3
+    R_ext = 10
+
+    # Résolution pour le maillage choisi
+    print("=== Résolution du problème ===")
+    r, theta, dr, dtheta = creer_maillage(R, R_ext, 50, 80) # création maillage polaire
+    A, b = construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext)
+    psi = resoudre_laplace(A, b, len(r), len(theta))
+    vr, vtheta, u, v = calculer_vitesses(psi, r, theta, dr, dtheta)
+    # Vérification avec la solution exacte
+    psi_exact = solution_analytique(U_inf, r, theta, R)
+    erreur = erreur_L2(psi, psi_exact)
+    print(f"\nErreur L2 : {erreur:.2e}")
+
+    # Calcul des coefficients aérodynamiques
+    Cp, Cd, Cl = calculer_coefficients_pression(vr, vtheta, theta, U_inf)
+    print(f"Coefficient de traînée Cd : {Cd:.6f}")
+    print(f"Coefficient de portance Cl : {Cl:.6f}")
+    tracer_lignes_courant(psi, r, theta, R)
+    tracer_champ_vitesse(u, v, r, theta, R)
+
+    #Résulatt de la convergence
+    print("\n=== Analyse de convergence ===")
+    tailles_maillage = [(20, 30), (30, 50), (40, 60), (50, 80)]
+    nb_points, erreurs, temps = analyse_convergence(tailles_maillage, U_inf, R, R_ext) #calcul L2, temps total, nombre de points
+    tracer_convergence(nb_points, erreurs, temps)
