@@ -116,5 +116,5 @@ Ce dépôt contient un projet pédagogique de simulation 2D d’un écoulement p
 
 ---
 
-Bon courage et bienvenue dans le projet !
+Bon courage.
 
