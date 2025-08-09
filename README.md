@@ -41,7 +41,7 @@ Ce dépôt contient un projet pédagogique de simulation 2D d’un écoulement p
 
 ---
 
-## Prise en main sur éditeur local (optionnel)
+## Prise en main pour faire rouler le code
 
 1. **Cloner le dépôt**
 
