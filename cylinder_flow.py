@@ -158,7 +158,7 @@ def tracer_lignes_courant(psi, r, theta, R):
     ax.set_ylabel("y")
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("Tracee ligne courants.png", dpi=300)
+    plt.savefig("Figures/Tracee ligne courants.png", dpi=300)
     plt.show()
     
     
@@ -182,7 +182,7 @@ def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
     plt.ylabel("y")
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("Tracee champs de vitesse.png", dpi=300)
+    plt.savefig("Figures/Tracee champs de vitesse.png", dpi=300)
     plt.show()
 
 def analyse_convergence(maillages, U_inf=10, R=3, R_ext=10):
@@ -238,6 +238,6 @@ def tracer_convergence(nb_points, erreurs, temps):
     ax2.grid(True)
 
     plt.tight_layout()
-    plt.savefig("Evolution convergence et performance vs nombre point.png", dpi=300)
+    plt.savefig("Figures/Evolution convergence et performance vs nombre point.png", dpi=300)
     plt.show()
 
