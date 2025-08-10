@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 from time import time
+
+
 #question pour le prof: 
 'possible avoir réponse?'
 'préferer creer classe pr parametre ou peut directement mettre comme valeur '
@@ -10,23 +12,31 @@ from time import time
 'ideal de combiner fonction ou ok si plusieurs'
 
 
-#Fonction élémentaire afin de créer le maillage de base de notre systeme 
-#qui nous permet de discrétiser l'équation de Laplaxe avec la methode des MDFs
+
 def creer_maillage(R, R_ext, nr, ntheta):
+    """ 
+    Crée le maillage de base et discrétise l'équation de Laplace par les MDFs.
+    """
     r = np.linspace(R, R_ext, nr)
     theta = np.linspace(0, 2*np.pi, ntheta, endpoint=False) # genere point espacés également 
     dr = r[1] - r[0]
     dtheta = theta[1] - theta[0]
     return r, theta, dr, dtheta
 
-'Ya moyen de combiner selon vous???'
-#Convertit indice 2D en 1D pour la suite de notre matrice creuse
+
+
 def obtenir_indice(i, j, ntheta):
+    """
+    Convertit indice 2D en 1D.
+    """
     return i * ntheta + j
 
-#Fonction qui permet de construire notre systeme de matrice. Discretise l'équation polaire en Laplace
-#On applique condition dirichlet aux frontières ert MDFs ordre2 pour nos dérivées
+
 def construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext):
+    """
+    Construit systeme de matrice, discrétise l'équation polaire en Laplace 
+    et applique les conditions dirichlets aux frontières par les MDFs à l'ordre 2 pour les dérivées.
+    """
     nr = len(r)
     ntheta = len(theta)
     N = nr * ntheta
@@ -57,16 +67,21 @@ def construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext):
                 A[idx, idx] = -2/dr**2 - 2/(r_i**2 * dtheta**2)
     return A.tocsr(), b
 
-#Résoude syst. linéaire avcec spsolve, donne réponse en 2D
+
 def resoudre_laplace(A, b, nr, ntheta):
+    """
+    Résout syst. linéaire avcec spsolve et donne la réponse en 2D.
+    """
     psi_aplati = spsolve(A, b)
     return psi_aplati.reshape((nr, ntheta))
 
 
 
-#Fonction qui va servir à déterminer le champ de vitesse à partir réponse de "def resoudre_laplace"
-#On convertit les vitesses en cartesienne pour les graphiques
 def calculer_vitesses(psi, r, theta, dr, dtheta):
+    """
+    Calcul le champ de vitesse à partir réponse de 'resoudre_laplace()'
+    et convertit les vitesses en cartesienne.
+    """
     nr, ntheta = psi.shape
     vr = np.zeros_like(psi)
     vtheta = np.zeros_like(psi)
@@ -83,7 +98,7 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
 
     vtheta[0, :] = vtheta[-1, :] = 0
 
-    # Conversion vers un systeme cartésien poyr représentation dans un graphique
+    # Conversion vers un systeme cartésien pour représentation dans un graphique
     u = np.zeros_like(psi)
     v = np.zeros_like(psi)
     for i in range(nr):
@@ -94,8 +109,11 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
     return vr, vtheta, u, v
 
 
-#Solution analytique du probleme pour comparer avec solution numéerique et va servir à la validation
+
 def solution_analytique(U_inf, r, theta, R):
+    """
+    Calcul la solution analytique du probleme.
+    """
     psi_exact = np.zeros((len(r), len(theta)))
     for i in range(len(r)):
         for j in range(len(theta)):
@@ -104,15 +122,16 @@ def solution_analytique(U_inf, r, theta, R):
 
 
 
-
-
-#Trouver erreur L2 pour analyse
 def erreur_L2(psi, psi_exact):
+    """
+    Calcul erreur L2.
+    """
     return np.sqrt(np.sum((psi - psi_exact)**2))
 
-#calcul le coeff. de pression Cp pour la surface du cylindre ainsi que les coeffs. aérodynamique
-#utilisé ppour la portance et trainée des graphiques
+
 def calculer_coefficients_pression(vr, vtheta, theta, U_inf):
+    """
+    Calcul le coeff. de pression Cp et les coeffs. aérodynamique pour la portance et trainée."""
     V_surface = np.sqrt(vr[0, :]**2 + vtheta[0, :]**2)
     Cp = 1 - (V_surface / U_inf)**2
     Cd = -0.5 * np.trapz(Cp * np.cos(theta), theta)
@@ -120,9 +139,11 @@ def calculer_coefficients_pression(vr, vtheta, theta, U_inf):
     return Cp, Cd, Cl
 
 
-'Est-ce mieux de laisser dans le fichier fonction ou on devrait mettre ds analyse?!'
-#Sert à tracer les lignes de courants (trajectoire du fluide)  
+'Est-ce mieux de laisser dans le fichier fonction ou on devrait mettre ds analyse?!' 
 def tracer_lignes_courant(psi, r, theta, R):
+    """
+    Trace les lignes de courants
+    """
     R_grille, Theta_grille = np.meshgrid(r, theta, indexing='ij')
     X = R_grille * np.cos(Theta_grille)
     Y = R_grille * np.sin(Theta_grille)
@@ -137,13 +158,16 @@ def tracer_lignes_courant(psi, r, theta, R):
     ax.set_ylabel("y")
     plt.grid(True)
     plt.tight_layout()
+    plt.savefig("Tracee ligne courants.png", dpi=300)
     plt.show()
     
     
 'Est-ce mieux de laisser dans le fichier fonction ou on devrait mettre ds analyse?!'
 'combiner les deux ?!?!?'
-#Sert à tracer champs de vitesse/intensité pour graphique
 def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
+    """
+    Trace champs de vitesse/intensité.
+    """
     R_grille, Theta_grille = np.meshgrid(r, theta, indexing='ij')
     X = R_grille * np.cos(Theta_grille)
     Y = R_grille * np.sin(Theta_grille)
@@ -158,9 +182,13 @@ def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
     plt.ylabel("y")
     plt.grid(True)
     plt.tight_layout()
+    plt.savefig("Tracee champs de vitesse.png", dpi=300)
     plt.show()
 
 def analyse_convergence(maillages, U_inf=10, R=3, R_ext=10):
+    """
+    Analyse la convergencee, évolution erreur L2 selon le rafinement du maillage, et temps de calcul
+    """
     erreurs = []
     temps = []
     nb_points = []
@@ -187,7 +215,7 @@ def analyse_convergence(maillages, U_inf=10, R=3, R_ext=10):
     return np.array(nb_points), np.array(erreurs), np.array(temps)
 
 
-#Analyser la convergencee et donc, évolution erreur L2 selon le rafinement du maillage, ettemps de calcul
+
 def tracer_convergence(nb_points, erreurs, temps):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -210,4 +238,6 @@ def tracer_convergence(nb_points, erreurs, temps):
     ax2.grid(True)
 
     plt.tight_layout()
+    plt.savefig("Evolution convergence et performance vs nombre point.png", dpi=300)
     plt.show()
+
