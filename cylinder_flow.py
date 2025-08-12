@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import LogFormatter
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 from time import time
