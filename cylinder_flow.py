@@ -429,7 +429,7 @@ def analyse_convergence(tailles_maillage, U_inf, R, R_ext):
 
         # --- Référence + erreur
         psi_ref = solution_analytique(U_inf, r, theta, R)
-        erreurs[i]   = np.sqrt(np.sum((psi - psi_ref)**2))   # √Σ e^2
+        erreurs[i] = erreur_L2(psi, psi_ref)
         nb_points[i] = nr * ntheta
 
 #       print(f"Erreur L2 : {erreur:.2e} | Temps : {duree:.2f}s")
