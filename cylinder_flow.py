@@ -7,11 +7,7 @@ from time import time
 
 
 #question pour le prof: 
-'possible avoir réponse?'
 'préferer creer classe pr parametre ou peut directement mettre comme valeur '
-'prefere une page analyse et et une page fonxction ou divide'
-'ideal de combiner fonction ou ok si plusieurs'
-
 
 
 def creer_maillage(R, R_ext, nr, ntheta):
@@ -136,7 +132,6 @@ def calculer_coefficients_pression(vr, vtheta, theta, U_inf):
     return Cp, Cd, Cl
 
 
-'Est-ce mieux de laisser dans le fichier fonction ou on devrait mettre ds analyse?!' 
 def tracer_lignes_courant(psi, r, theta, R):
     """
     Trace les lignes de courants
@@ -158,9 +153,7 @@ def tracer_lignes_courant(psi, r, theta, R):
     plt.savefig("Figures/Tracee ligne courants.png", dpi=300)
     plt.show()
     
-    
-'Est-ce mieux de laisser dans le fichier fonction ou on devrait mettre ds analyse?!'
-'combiner les deux ?!?!?'
+
 def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
     """
     Trace champs de vitesse/intensité.
