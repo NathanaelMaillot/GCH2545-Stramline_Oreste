@@ -104,6 +104,28 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
     return vr, vtheta, u, v
 
 
+def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
+    """
+    Trace champs de vitesse/intensité.
+    """
+    R_grille, Theta_grille = np.meshgrid(r, theta, indexing='ij')
+    X = R_grille * np.cos(Theta_grille)
+    Y = R_grille * np.sin(Theta_grille)
+
+    plt.figure(figsize=(8, 6))
+    plt.quiver(X[::saut, ::saut], Y[::saut, ::saut], u[::saut, ::saut], v[::saut, ::saut], scale=100)
+    plt.contour(X, Y, u**2 + v**2, levels=10, cmap='coolwarm', alpha=0.5)
+    plt.gca().add_patch(plt.Circle((0, 0), R, color='red', fill=True, alpha=0.3))
+    plt.axis('equal')
+    plt.title("Champ de vitesse")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("Figures/Tracee champs de vitesse.png", dpi=300)
+    plt.show()
+
+
 def solution_analytique(U_inf, r, theta, R):
     """
     Calcul la solution analytique du probleme.
@@ -153,28 +175,6 @@ def tracer_lignes_courant(psi, r, theta, R):
     plt.savefig("Figures/Tracee ligne courants.png", dpi=300)
     plt.show()
     
-
-def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
-    """
-    Trace champs de vitesse/intensité.
-    """
-    R_grille, Theta_grille = np.meshgrid(r, theta, indexing='ij')
-    X = R_grille * np.cos(Theta_grille)
-    Y = R_grille * np.sin(Theta_grille)
-
-    plt.figure(figsize=(8, 6))
-    plt.quiver(X[::saut, ::saut], Y[::saut, ::saut], u[::saut, ::saut], v[::saut, ::saut], scale=100)
-    plt.contour(X, Y, u**2 + v**2, levels=10, cmap='coolwarm', alpha=0.5)
-    plt.gca().add_patch(plt.Circle((0, 0), R, color='red', fill=True, alpha=0.3))
-    plt.axis('equal')
-    plt.title("Champ de vitesse")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig("Figures/Tracee champs de vitesse.png", dpi=300)
-    plt.show()
-
 
 def seq_maillages(R=3, R_ext=10, k=1.0, nr_list=(24,30,36,45)):
     tailles = []
