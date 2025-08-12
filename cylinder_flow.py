@@ -11,27 +11,94 @@ from time import time
 
 
 def creer_maillage(R, R_ext, nr, ntheta):
-    """ 
-    Crée le maillage de base et discrétise l'équation de Laplace par les MDFs.
+    """Crée une grille polaire uniforme.
+
+    Parameters
+    ----------
+    R : float
+        Rayon du cylindre intérieur en mètres.
+    R_ext : float
+        Rayon extérieur du domaine en mètres.
+    nr : int
+        Nombre de nœuds dans la direction radiale.
+    ntheta : int
+        Nombre de nœuds dans la direction angulaire.
+
+    Returns
+    -------
+    r : numpy.ndarray
+        Coordonnées radiales (m).
+    theta : numpy.ndarray
+        Coordonnées angulaires (rad).
+    dr : float
+        Pas radial (m).
+    dtheta : float
+        Pas angulaire (rad).
+
+    Notes
+    -----
+    La grille sert de support à la discrétisation de l'équation de Laplace
+    par la méthode des différences finies.
     """
     r = np.linspace(R, R_ext, nr)
-    theta = np.linspace(0, 2*np.pi, ntheta, endpoint=False) # genere point espacés également 
+    theta = np.linspace(0, 2*np.pi, ntheta, endpoint=False) # genere point espacés également
     dr = r[1] - r[0]
     dtheta = theta[1] - theta[0]
     return r, theta, dr, dtheta
 
 
 def obtenir_indice(i, j, ntheta):
-    """
-    Convertit indice 2D en 1D.
+    """Convertit un couple d'indices 2D en indice 1D.
+
+    Parameters
+    ----------
+    i : int
+        Indice radial.
+    j : int
+        Indice angulaire.
+    ntheta : int
+        Nombre total de points angulaires.
+
+    Returns
+    -------
+    int
+        Indice aplati correspondant à ``(i, j)``.
     """
     return i * ntheta + j
 
 
 def construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext):
-    """
-    Construit systeme de matrice, discrétise l'équation polaire en Laplace 
-    et applique les conditions dirichlets aux frontières par les MDFs à l'ordre 2 pour les dérivées.
+    """Assemble la matrice du système pour l'équation de Laplace.
+
+    Parameters
+    ----------
+    r : numpy.ndarray
+        Coordonnées radiales (m).
+    theta : numpy.ndarray
+        Coordonnées angulaires (rad).
+    dr : float
+        Pas radial (m).
+    dtheta : float
+        Pas angulaire (rad).
+    U_inf : float
+        Vitesse à l'infini (m/s).
+    R : float
+        Rayon du cylindre (m).
+    R_ext : float
+        Rayon extérieur du domaine (m).
+
+    Returns
+    -------
+    A : scipy.sparse.csr_matrix
+        Matrice creuse du système linéaire.
+    b : numpy.ndarray
+        Vecteur second membre.
+
+    Notes
+    -----
+    La discrétisation est effectuée par différences finies d'ordre deux en
+    coordonnées polaires avec conditions de Dirichlet imposées aux
+    frontières interne et externe.
     """
     nr = len(r)
     ntheta = len(theta)
@@ -65,17 +132,54 @@ def construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext):
 
 
 def resoudre_laplace(A, b, nr, ntheta):
-    """
-    Résout syst. linéaire avcec spsolve et donne la réponse en 2D.
+    """Résout l'équation de Laplace discrétisée.
+
+    Parameters
+    ----------
+    A : scipy.sparse.csr_matrix
+        Matrice du système linéaire.
+    b : numpy.ndarray
+        Vecteur second membre.
+    nr : int
+        Nombre de nœuds radiaux.
+    ntheta : int
+        Nombre de nœuds angulaires.
+
+    Returns
+    -------
+    numpy.ndarray
+        Potentiel de vitesse ``ψ`` au format ``(nr, ntheta)``.
     """
     psi_aplati = spsolve(A, b)
     return psi_aplati.reshape((nr, ntheta))
 
 
 def calculer_vitesses(psi, r, theta, dr, dtheta):
-    """
-    Calcul le champ de vitesse à partir réponse de 'resoudre_laplace()'
-    et convertit les vitesses en cartesienne.
+    """Calcule les composantes de vitesse à partir du potentiel.
+
+    Parameters
+    ----------
+    psi : numpy.ndarray
+        Potentiel de vitesse calculé (m²/s).
+    r : numpy.ndarray
+        Coordonnées radiales (m).
+    theta : numpy.ndarray
+        Coordonnées angulaires (rad).
+    dr : float
+        Pas radial (m).
+    dtheta : float
+        Pas angulaire (rad).
+
+    Returns
+    -------
+    vr : numpy.ndarray
+        Composante radiale de la vitesse (m/s).
+    vtheta : numpy.ndarray
+        Composante angulaire de la vitesse (m/s).
+    u : numpy.ndarray
+        Composante cartésienne ``x`` de la vitesse (m/s).
+    v : numpy.ndarray
+        Composante cartésienne ``y`` de la vitesse (m/s).
     """
     nr, ntheta = psi.shape
     vr = np.zeros_like(psi)
@@ -105,8 +209,27 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
 
 
 def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
-    """
-    Trace champs de vitesse/intensité.
+    """Affiche un champ de vecteurs et son intensité.
+
+    Parameters
+    ----------
+    u : numpy.ndarray
+        Composante cartésienne ``x`` de la vitesse (m/s).
+    v : numpy.ndarray
+        Composante cartésienne ``y`` de la vitesse (m/s).
+    r : numpy.ndarray
+        Coordonnées radiales (m).
+    theta : numpy.ndarray
+        Coordonnées angulaires (rad).
+    R : float
+        Rayon du cylindre (m).
+    saut : int, optional
+        Sous-échantillonnage du champ de vecteurs, par défaut ``2``.
+
+    Returns
+    -------
+    None
+        La fonction produit un graphique et ne renvoie aucune valeur.
     """
     R_grille, Theta_grille = np.meshgrid(r, theta, indexing='ij')
     X = R_grille * np.cos(Theta_grille)
@@ -127,8 +250,23 @@ def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
 
 
 def solution_analytique(U_inf, r, theta, R):
-    """
-    Calcul la solution analytique du probleme.
+    """Évalue la solution analytique du potentiel d'écoulement.
+
+    Parameters
+    ----------
+    U_inf : float
+        Vitesse uniforme à l'infini (m/s).
+    r : numpy.ndarray
+        Coordonnées radiales (m).
+    theta : numpy.ndarray
+        Coordonnées angulaires (rad).
+    R : float
+        Rayon du cylindre (m).
+
+    Returns
+    -------
+    numpy.ndarray
+        Potentiel analytique ``ψ`` (m²/s) sur la grille ``(len(r), len(theta))``.
     """
     psi_exact = np.zeros((len(r), len(theta)))
     for i in range(len(r)):
@@ -138,15 +276,46 @@ def solution_analytique(U_inf, r, theta, R):
 
 
 def erreur_L2(psi, psi_exact):
-    """
-    Calcul erreur L2.
+    """Calcule l'erreur quadratique moyenne entre deux champs.
+
+    Parameters
+    ----------
+    psi : numpy.ndarray
+        Champ numérique obtenu.
+    psi_exact : numpy.ndarray
+        Champ de référence exact.
+
+    Returns
+    -------
+    float
+        Norme ``L2`` de la différence entre ``psi`` et ``psi_exact``.
     """
     return np.sqrt(np.sum((psi - psi_exact)**2))
 
 
 def calculer_coefficients_pression(vr, vtheta, theta, U_inf):
+    """Évalue les coefficients aérodynamiques à la paroi du cylindre.
+
+    Parameters
+    ----------
+    vr : numpy.ndarray
+        Composante radiale de la vitesse (m/s).
+    vtheta : numpy.ndarray
+        Composante angulaire de la vitesse (m/s).
+    theta : numpy.ndarray
+        Coordonnées angulaires à la surface (rad).
+    U_inf : float
+        Vitesse uniforme à l'infini (m/s).
+
+    Returns
+    -------
+    Cp : numpy.ndarray
+        Coefficient de pression le long de la surface.
+    Cd : float
+        Coefficient de traînée.
+    Cl : float
+        Coefficient de portance.
     """
-    Calcul le coeff. de pression Cp et les coeffs. aérodynamique pour la portance et trainée."""
     V_surface = np.sqrt(vr[0, :]**2 + vtheta[0, :]**2)
     Cp = 1 - (V_surface / U_inf)**2
     Cd = -0.5 * np.trapz(Cp * np.cos(theta), theta)
@@ -155,8 +324,23 @@ def calculer_coefficients_pression(vr, vtheta, theta, U_inf):
 
 
 def tracer_lignes_courant(psi, r, theta, R):
-    """
-    Trace les lignes de courants
+    """Affiche les lignes de courant de l'écoulement.
+
+    Parameters
+    ----------
+    psi : numpy.ndarray
+        Potentiel de vitesse (m²/s).
+    r : numpy.ndarray
+        Coordonnées radiales (m).
+    theta : numpy.ndarray
+        Coordonnées angulaires (rad).
+    R : float
+        Rayon du cylindre (m).
+
+    Returns
+    -------
+    None
+        La fonction trace un graphique et ne renvoie rien.
     """
     R_grille, Theta_grille = np.meshgrid(r, theta, indexing='ij')
     X = R_grille * np.cos(Theta_grille)
@@ -176,18 +360,56 @@ def tracer_lignes_courant(psi, r, theta, R):
     plt.show()
     
 
-def seq_maillages(R=3, R_ext=10, k=1.0, nr_list=(24,30,36,45)):
+def seq_maillages(R=3, R_ext=10, k=1.0, nr_list=(24, 30, 36, 45)):
+    """Génère des tailles de maillage isotropes successives.
+
+    Parameters
+    ----------
+    R : float, optional
+        Rayon du cylindre (m), par défaut ``3``.
+    R_ext : float, optional
+        Rayon extérieur du domaine (m), par défaut ``10``.
+    k : float, optional
+        Facteur d'isotropie ``R dθ ≈ k·dr``, par défaut ``1.0``.
+    nr_list : tuple of int, optional
+        Valeurs possibles pour le nombre de nœuds radiaux.
+
+    Returns
+    -------
+    list of tuple
+        Chaque élément ``(nr, ntheta)`` correspond à une paire de tailles de
+        maillage radiale et angulaire.
+    """
     tailles = []
     for nr in nr_list:
-        dr = (R_ext - R)/(nr - 1)
-        ntheta = int(round((2*np.pi*R)/(k*dr)))  # isotropie: R dθ ≈ k·dr
+        dr = (R_ext - R) / (nr - 1)
+        ntheta = int(round((2 * np.pi * R) / (k * dr)))  # isotropie: R dθ ≈ k·dr
         tailles.append((nr, ntheta))
     return tailles
 
 
 def analyse_convergence(tailles_maillage, U_inf, R, R_ext):
-    """
-    Calcule nb_points, erreurs et temps pour chaque maillage.
+    """Évalue l'erreur et le coût pour plusieurs maillages.
+
+    Parameters
+    ----------
+    tailles_maillage : list of tuple
+        Liste de couples ``(nr, ntheta)`` définissant les maillages.
+    U_inf : float
+        Vitesse à l'infini (m/s).
+    R : float
+        Rayon du cylindre (m).
+    R_ext : float
+        Rayon extérieur du domaine (m).
+
+    Returns
+    -------
+    nb_points : numpy.ndarray
+        Nombre total de nœuds pour chaque maillage.
+    erreurs : numpy.ndarray
+        Norme ``L2`` de l'erreur associée à chaque maillage.
+    temps : numpy.ndarray
+        Durée de résolution pour chaque maillage (s).
     """
 
     L = len(tailles_maillage)
@@ -219,9 +441,21 @@ def analyse_convergence(tailles_maillage, U_inf, R, R_ext):
 
 
 def tracer_convergence(nb_points, erreurs, temps):
-    """
-    Trace (1) erreur vs nb_points avec référence ∝ N^{-1/2}
-          (2) temps de calcul vs nb_points (courbe de performance).
+    """Trace les courbes de convergence et de performance.
+
+    Parameters
+    ----------
+    nb_points : numpy.ndarray
+        Nombre de nœuds pour chaque maillage.
+    erreurs : numpy.ndarray
+        Erreurs ``L2`` correspondantes.
+    temps : numpy.ndarray
+        Temps de calcul pour chaque maillage (s).
+
+    Returns
+    -------
+    None
+        La fonction produit des graphiques et ne renvoie rien.
     """
     # Référence ~ N^{-1/2}, ancrée au 2e point si possible (sinon au 1er)
     j = 1 if len(erreurs) >= 2 else 0
