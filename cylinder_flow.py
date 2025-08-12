@@ -268,10 +268,8 @@ def solution_analytique(U_inf, r, theta, R):
     numpy.ndarray
         Potentiel analytique ``ψ`` (m²/s) sur la grille ``(len(r), len(theta))``.
     """
-    psi_exact = np.zeros((len(r), len(theta)))
-    for i in range(len(r)):
-        for j in range(len(theta)):
-            psi_exact[i, j] = U_inf * r[i] * np.sin(theta[j]) * (1 - R**2 / r[i]**2)
+    R_grid, Theta_grid = np.meshgrid(r, theta, indexing="ij")
+    psi_exact = U_inf * R_grid * np.sin(Theta_grid) * (1 - R**2 / R_grid**2)
     return psi_exact
 
 
