@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import LogFormatter
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 from time import time
@@ -22,7 +23,6 @@ def creer_maillage(R, R_ext, nr, ntheta):
     dr = r[1] - r[0]
     dtheta = theta[1] - theta[0]
     return r, theta, dr, dtheta
-
 
 
 def obtenir_indice(i, j, ntheta):
@@ -76,7 +76,6 @@ def resoudre_laplace(A, b, nr, ntheta):
     return psi_aplati.reshape((nr, ntheta))
 
 
-
 def calculer_vitesses(psi, r, theta, dr, dtheta):
     """
     Calcul le champ de vitesse à partir réponse de 'resoudre_laplace()'
@@ -109,7 +108,6 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
     return vr, vtheta, u, v
 
 
-
 def solution_analytique(U_inf, r, theta, R):
     """
     Calcul la solution analytique du probleme.
@@ -119,7 +117,6 @@ def solution_analytique(U_inf, r, theta, R):
         for j in range(len(theta)):
             psi_exact[i, j] = U_inf * r[i] * np.sin(theta[j]) * (1 - R**2 / r[i]**2)
     return psi_exact
-
 
 
 def erreur_L2(psi, psi_exact):
@@ -185,59 +182,77 @@ def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
     plt.savefig("Figures/Tracee champs de vitesse.png", dpi=300)
     plt.show()
 
-def analyse_convergence(maillages, U_inf=10, R=3, R_ext=10):
-    """
-    Analyse la convergencee, évolution erreur L2 selon le rafinement du maillage, et temps de calcul
-    """
-    erreurs = []
-    temps = []
-    nb_points = []
 
-    for nr, ntheta in maillages:
-        print(f"\n=== Maillage {nr} x {ntheta} ===")
+def seq_maillages(R=3, R_ext=10, k=1.0, nr_list=(24,30,36,45)):
+    tailles = []
+    for nr in nr_list:
+        dr = (R_ext - R)/(nr - 1)
+        ntheta = int(round((2*np.pi*R)/(k*dr)))  # isotropie: R dθ ≈ k·dr
+        tailles.append((nr, ntheta))
+    return tailles
+
+
+def analyse_convergence(tailles_maillage, U_inf, R, R_ext):
+    """
+    Calcule nb_points, erreurs et temps pour chaque maillage.
+    """
+
+    L = len(tailles_maillage)
+    nb_points = np.zeros(L, dtype=int)
+    erreurs   = np.zeros(L, dtype=float)
+    temps     = np.zeros(L, dtype=float)
+
+    for i, couple in enumerate(tailles_maillage):
+        nr, ntheta = int(couple[0]), int(couple[1])
+
+        # --- Maillage
         r, theta, dr, dtheta = creer_maillage(R, R_ext, nr, ntheta)
 
-        debut = time()
+        # --- Assemblage + résolution (temps mesuré)
+        t0 = time()
         A, b = construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext)
         psi = resoudre_laplace(A, b, nr, ntheta)
-        vr, vtheta, u, v = calculer_vitesses(psi, r, theta, dr, dtheta)
-        duree = time() - debut
+        temps[i] = time() - t0
 
-        psi_exact = solution_analytique(U_inf, r, theta, R)
-        erreur = erreur_L2(psi, psi_exact)
+        # --- Référence + erreur
+        psi_ref = solution_analytique(U_inf, r, theta, R)
+        erreurs[i]   = np.sqrt(np.sum((psi - psi_ref)**2))   # √Σ e^2
+        nb_points[i] = nr * ntheta
 
-        erreurs.append(erreur)
-        temps.append(duree)
-        nb_points.append(nr * ntheta)
+#       print(f"Erreur L2 : {erreur:.2e} | Temps : {duree:.2f}s")
 
-        print(f"Erreur L2 : {erreur:.2e} | Temps : {duree:.2f}s")
 
-    return np.array(nb_points), np.array(erreurs), np.array(temps)
-
+    return nb_points, erreurs, temps
 
 
 def tracer_convergence(nb_points, erreurs, temps):
+    """
+    Trace (1) erreur vs nb_points avec référence ∝ N^{-1/2}
+          (2) temps de calcul vs nb_points (courbe de performance).
+    """
+    # Référence ~ N^{-1/2}, ancrée au 2e point si possible (sinon au 1er)
+    j = 1 if len(erreurs) >= 2 else 0
+    ref = erreurs[j] * (nb_points / nb_points[j])**(-0.5)
+
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-    # Erreur L2 vs nombre de points
-    ax1.loglog(nb_points, erreurs, 'o-', label='Erreur L2')
-    h = 1 / np.sqrt(nb_points)
-    ax1.loglog(nb_points, erreurs[0] * (h / h[0])**2, '--', label='Référence O(h²)')
+    # Erreur
+    ax1.loglog(nb_points, erreurs, 'o-', label='Erreur')
+    ax1.loglog(nb_points, ref, '--', label='Référence ∝ N$^{-1/2}$')
+    ax1.set_xlabel('Nombre de nœuds $N$')
+    ax1.set_ylabel('Erreur')
     ax1.set_title("Convergence de l'erreur")
-    ax1.set_xlabel("Nombre de points")
-    ax1.set_ylabel("Erreur L2")
-    ax1.legend()
     ax1.grid(True)
+    ax1.legend()
 
-    # Temps vs nombre de points
-    ax2.loglog(nb_points, temps, 's-r', label='Temps de calcul')
-    ax2.set_title("Performance")
-    ax2.set_xlabel("Nombre de points")
-    ax2.set_ylabel("Temps (s)")
-    ax2.legend()
+    # Performance
+    ax2.loglog(nb_points, temps, 's-', label='Temps de calcul')
+    ax2.set_xlabel('Nombre de nœuds $N$')
+    ax2.set_ylabel('Temps (s)')
+    ax2.set_title('Performance')
     ax2.grid(True)
+    ax2.legend()
 
-    plt.tight_layout()
     plt.savefig("Figures/Evolution convergence et performance vs nombre point.png", dpi=300)
+    plt.tight_layout()
     plt.show()
-

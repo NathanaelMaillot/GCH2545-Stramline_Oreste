@@ -9,9 +9,11 @@ from cylinder_flow import (
     tracer_lignes_courant,
     tracer_champ_vitesse,
     analyse_convergence,
-    tracer_convergence
+    tracer_convergence,
+    seq_maillages
 )
-# changer pr import toute les fonctions auto avec *
+import numpy as np
+
 if __name__ == "__main__":
     # Paramètres du problème donnés
     U_inf = 10
@@ -24,6 +26,7 @@ if __name__ == "__main__":
     A, b = construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext)
     psi = resoudre_laplace(A, b, len(r), len(theta))
     vr, vtheta, u, v = calculer_vitesses(psi, r, theta, dr, dtheta)
+
     # Vérification avec la solution exacte
     psi_exact = solution_analytique(U_inf, r, theta, R)
     erreur = erreur_L2(psi, psi_exact)
@@ -38,6 +41,9 @@ if __name__ == "__main__":
 
     #Résulatt de la convergence
     print("\n=== Analyse de convergence ===")
-    tailles_maillage = [(20, 30), (30, 50), (40, 60), (50, 80)]
+    tailles_maillage = seq_maillages()  # utilise k=1.0 par défaut
+    print(tailles_maillage)
     nb_points, erreurs, temps = analyse_convergence(tailles_maillage, U_inf, R, R_ext) #calcul L2, temps total, nombre de points
+    eoc = np.log(erreurs[1:] / erreurs[:-1]) / np.log(nb_points[1:] / nb_points[:-1])
+    print("EOC attendu ≈ -0.50 :", eoc)
     tracer_convergence(nb_points, erreurs, temps)
