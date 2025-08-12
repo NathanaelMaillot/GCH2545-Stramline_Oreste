@@ -1,8 +1,11 @@
+import os
 import numpy as np
+from time import time
 import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
-from time import time
+
+
 
 
 #question pour le prof: 
@@ -207,6 +210,53 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
     return vr, vtheta, u, v
 
 
+def tracer_cartes_vx_vy(u, v, r, theta, R, niveaux=200, cmap='coolwarm',
+                        meme_echelle=False, fichier=None):
+    """
+    Affiche deux cartes: v_x (à gauche) et v_y (à droite) sur la grille polaire
+    (r, theta) reprojetée en (x, y). La zone r < R est masquée (cercle blanc).
+    """
+    # Grille XY à partir de la grille polaire
+    Rg, Tg = np.meshgrid(r, theta, indexing='ij')  # mêmes shapes que u, v
+    X = Rg * np.cos(Tg)
+    Y = Rg * np.sin(Tg)
+
+    # Masquer l'intérieur du cylindre
+    masque = Rg <= (R + 1e-12)
+    u_m = np.ma.masked_where(masque, u)
+    v_m = np.ma.masked_where(masque, v)
+
+    # Échelles de couleurs (symétriques autour de 0)
+    if meme_echelle:
+        vmax = np.nanmax([np.nanmax(np.abs(u_m)), np.nanmax(np.abs(v_m))])
+        vlims_u = vlims_v = (-vmax, vmax)
+    else:
+        vmax_u = np.nanmax(np.abs(u_m))
+        vmax_v = np.nanmax(np.abs(v_m))
+        vlims_u = (-vmax_u, vmax_u)
+        vlims_v = (-vmax_v, vmax_v)
+
+    # Figure
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
+
+    im0 = axs[0].contourf(X, Y, u_m, levels=niveaux, cmap=cmap,vmin=vlims_u[0], vmax=vlims_u[1])
+    axs[0].set_aspect('equal'); axs[0].set_title(r"$v_x$ Component")
+    axs[0].set_xlabel("Position X"); axs[0].set_ylabel("Position Y")
+    axs[0].set_xlim(-r.max(), r.max()); axs[0].set_ylim(-r.max(), r.max())
+    c0 = fig.colorbar(im0, ax=axs[0]); c0.set_label(r"$v_x$")
+
+    im1 = axs[1].contourf(X, Y, v_m, levels=niveaux, cmap=cmap,vmin=vlims_v[0], vmax=vlims_v[1])
+    axs[1].set_aspect('equal'); axs[1].set_title(r"$v_y$ Component")
+    axs[1].set_xlabel("Position X"); axs[1].set_ylabel("Position Y")
+    axs[1].set_xlim(-r.max(), r.max()); axs[1].set_ylim(-r.max(), r.max())
+    c1 = fig.colorbar(im1, ax=axs[1]); c1.set_label(r"$v_y$")
+
+    os.makedirs("Figures", exist_ok=True)
+    if fichier:
+        plt.savefig(fichier, dpi=300, bbox_inches="tight")
+    plt.show()
+
+
 def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
     """Affiche un champ de vecteurs et son intensité.
 
@@ -244,6 +294,7 @@ def tracer_champ_vitesse(u, v, r, theta, R, saut=2):
     plt.ylabel("y")
     plt.grid(True)
     plt.tight_layout()
+    os.makedirs("Figures", exist_ok=True)
     plt.savefig("Figures/Tracee champs de vitesse.png", dpi=300)
     plt.show()
 
@@ -353,6 +404,7 @@ def tracer_lignes_courant(psi, r, theta, R):
     ax.set_ylabel("y")
     plt.grid(True)
     plt.tight_layout()
+    os.makedirs("Figures", exist_ok=True)
     plt.savefig("Figures/Tracee ligne courants.png", dpi=300)
     plt.show()
     
@@ -476,7 +528,7 @@ def tracer_convergence(nb_points, erreurs, temps):
     ax2.set_title('Performance')
     ax2.grid(True)
     ax2.legend()
-
+    os.makedirs("Figures", exist_ok=True)
     plt.savefig("Figures/Evolution convergence et performance vs nombre point.png", dpi=300)
     plt.tight_layout()
     plt.show()
