@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from time import time
+import matplotlib.tri as mtri
 import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
@@ -239,17 +240,58 @@ def tracer_cartes_vx_vy(u, v, r, theta, R, niveaux=200, cmap='coolwarm',
     # Figure
     fig, axs = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
 
-    im0 = axs[0].contourf(X, Y, u_m, levels=niveaux, cmap=cmap,vmin=vlims_u[0], vmax=vlims_u[1])
-    axs[0].set_aspect('equal'); axs[0].set_title(r"$v_x$ Component")
-    axs[0].set_xlabel("Position X"); axs[0].set_ylabel("Position Y")
-    axs[0].set_xlim(-r.max(), r.max()); axs[0].set_ylim(-r.max(), r.max())
-    c0 = fig.colorbar(im0, ax=axs[0]); c0.set_label(r"$v_x$")
+    # im0 = axs[0].contourf(X, Y, u_m, levels=niveaux, cmap=cmap,vmin=vlims_u[0], vmax=vlims_u[1])
+    # axs[0].set_aspect('equal'); axs[0].set_title(r"$v_x$ Component")
+    # axs[0].set_xlabel("Position X"); axs[0].set_ylabel("Position Y")
+    # axs[0].set_xlim(-r.max(), r.max()); axs[0].set_ylim(-r.max(), r.max())
+    # c0 = fig.colorbar(im0, ax=axs[0]); c0.set_label(r"$v_x$")
 
-    im1 = axs[1].contourf(X, Y, v_m, levels=niveaux, cmap=cmap,vmin=vlims_v[0], vmax=vlims_v[1])
-    axs[1].set_aspect('equal'); axs[1].set_title(r"$v_y$ Component")
-    axs[1].set_xlabel("Position X"); axs[1].set_ylabel("Position Y")
-    axs[1].set_xlim(-r.max(), r.max()); axs[1].set_ylim(-r.max(), r.max())
-    c1 = fig.colorbar(im1, ax=axs[1]); c1.set_label(r"$v_y$")
+    # im1 = axs[1].contourf(X, Y, v_m, levels=niveaux, cmap=cmap,vmin=vlims_v[0], vmax=vlims_v[1])
+    # axs[1].set_aspect('equal'); axs[1].set_title(r"$v_y$ Component")
+    # axs[1].set_xlabel("Position X"); axs[1].set_ylabel("Position Y")
+    # axs[1].set_xlim(-r.max(), r.max()); axs[1].set_ylim(-r.max(), r.max())
+    # c1 = fig.colorbar(im1, ax=axs[1]); c1.set_label(r"$v_y$")
+
+    cmap_u = plt.get_cmap(cmap, niveaux).copy()
+    cmap_u.set_bad(color="white")
+    triang = mtri.Triangulation(X.ravel(), Y.ravel())
+    mask_nodes = masque.ravel()
+    triang.set_mask(np.any(mask_nodes[triang.triangles], axis=1))
+    im0 = axs[0].tricontourf(
+        triang,
+        u_m.filled(np.nan).ravel(),
+        levels=niveaux,
+        cmap=cmap_u,
+        vmin=vlims_u[0],
+        vmax=vlims_u[1],
+    )
+    axs[0].set_aspect("equal")
+    axs[0].set_title(r"$v_x$ Component")
+    axs[0].set_xlabel("Position X")
+    axs[0].set_ylabel("Position Y")
+    axs[0].set_xlim(-r.max(), r.max())
+    axs[0].set_ylim(-r.max(), r.max())
+    c0 = fig.colorbar(im0, ax=axs[0])
+    c0.set_label(r"$v_x$")
+
+    cmap_v = plt.get_cmap(cmap, niveaux).copy()
+    cmap_v.set_bad(color="white")
+    im1 = axs[1].tricontourf(
+        triang,
+        v_m.filled(np.nan).ravel(),
+        levels=niveaux,
+        cmap=cmap_v,
+        vmin=vlims_v[0],
+        vmax=vlims_v[1],
+    )
+    axs[1].set_aspect("equal")
+    axs[1].set_title(r"$v_y$ Component")
+    axs[1].set_xlabel("Position X")
+    axs[1].set_ylabel("Position Y")
+    axs[1].set_xlim(-r.max(), r.max())
+    axs[1].set_ylim(-r.max(), r.max())
+    c1 = fig.colorbar(im1, ax=axs[1])
+    c1.set_label(r"$v_y$")
 
     os.makedirs("Figures", exist_ok=True)
     if fichier:
