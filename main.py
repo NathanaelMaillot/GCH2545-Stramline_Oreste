@@ -92,9 +92,9 @@ def main():
     print("EOC attendu ≈ -0.50 :", eoc)
     tracer_convergence(nb_points, erreurs, temps)
 
+    # Sensibilité à R_ext
     Rext_list = [8.0, 10.0, 12.0, 15.0]
     res = sensibilite_Rext(U_inf, R, Rext_list, dr_cible=dr)
-
     for r1 in res:
         print(f"R_ext={r1['R_ext']:.1f} | N={r1['N']} | errL2={r1['err_L2']:.2e} | "
           f"Cp_max={r1['epsCp_inf']:.2e} | Cp_moy={r1['epsCp_L2']:.2e} | "
