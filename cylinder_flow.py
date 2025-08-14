@@ -213,21 +213,55 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
 
 
 def tracer_cartes_vx_vy(u, v, r, theta, R,
-                        niveaux=300, cmap='coolwarm', 
-                        ranges=((0.0, 1.75), (-0.75, 0.75)), 
+                        niveaux=300, cmap='coolwarm',
+                        ranges=((0.0, 1.75), (-0.75, 0.75)),
                         fichier="Figures/vx_vy.png"):
+    """Trace les cartes de vitesse cartésienne ``v_x`` et ``v_y``.
 
-    # grille polaire
+    Parameters
+    ----------
+    u : numpy.ndarray
+        Composante cartésienne ``x`` de la vitesse (m/s).
+    v : numpy.ndarray
+        Composante cartésienne ``y`` de la vitesse (m/s).
+    r : numpy.ndarray
+        Coordonnées radiales (m).
+    theta : numpy.ndarray
+        Coordonnées angulaires (rad).
+    R : float
+        Rayon du cylindre (m).
+    niveaux : int, optional
+        Nombre de niveaux de contours pour les cartes, par défaut ``300``.
+    cmap : str or matplotlib.colors.Colormap, optional
+        Carte de couleurs utilisée, par défaut ``'coolwarm'``.
+    ranges : tuple of tuple of float, optional
+        Intervalles ``((vx_min, vx_max), (vy_min, vy_max))`` pour les
+        composantes ``v_x`` et ``v_y`` en m/s.
+    fichier : str or None, optional
+        Chemin de sauvegarde de la figure. Aucun fichier n'est créé si ``None``.
+
+    Returns
+    -------
+    None
+        La fonction génère un graphique et ne renvoie aucune valeur.
+
+    Notes
+    -----
+    Les champs à l'intérieur du cylindre sont masqués afin de ne tracer que
+    l'écoulement extérieur.
+    """
+
+    # grille polaire pour les coordonnées d'évaluation
     Rg, Tg = np.meshgrid(r, theta, indexing='ij')
-    # grille cartesienne
+    # conversion vers les coordonnées cartésiennes
     X, Y = Rg*np.cos(Tg), Rg*np.sin(Tg)
 
-    # champs à tracer
+    # masque les points situés à l'intérieur du cylindre
     mask = Rg <= R
     u_plot = np.ma.array(u, mask=mask)
     v_plot = np.ma.array(v, mask=mask)
 
-    # périodicité : répète la première colonne en fin
+    # périodicité : répète la première colonne pour fermer l'anneau
     Xw = np.concatenate([X, X[:, :1]], axis=1)
     Yw = np.concatenate([Y, Y[:, :1]], axis=1)
     Uw = np.ma.concatenate([u_plot, u_plot[:, :1]], axis=1)
@@ -237,6 +271,7 @@ def tracer_cartes_vx_vy(u, v, r, theta, R,
     levels_u = np.linspace(vx_min, vx_max, niveaux)
     levels_v = np.linspace(vy_min, vy_max, niveaux)
 
+    # création des deux sous-graphiques côte à côte
     fig, axs = plt.subplots(1, 2, figsize=(12,5), constrained_layout=True)
     im0 = axs[0].contourf(Xw, Yw, Uw, levels=levels_u, cmap=cmap, extend='both')
     im1 = axs[1].contourf(Xw, Yw, Vw, levels=levels_v, cmap=cmap, extend='both')
@@ -250,13 +285,13 @@ def tracer_cartes_vx_vy(u, v, r, theta, R,
 
     axs[0].set_title(r"$v_x$ Component", fontsize=16, pad=8)
     axs[1].set_title(r"$v_y$ Component", fontsize=16, pad=8)
-    
-    # vx : ticks 0.00 → 1.75
+
+    # barre de couleur pour v_x : ticks 0.00 → 1.75
     c0 = fig.colorbar(im0, ax=axs[0], ticks=np.linspace(vx_min, vx_max, 8))
     c0.set_label(r"$v_x$", fontsize=14)
     c0.formatter = FormatStrFormatter("%.2f"); c0.update_ticks()
 
-    # vy : ticks -0.75 → 0.75 avec 0 centré
+    # barre de couleur pour v_y : ticks -0.75 → 0.75 avec 0 centré
     c1 = fig.colorbar(im1, ax=axs[1], ticks=np.linspace(vy_min, vy_max, 7))
     c1.set_label(r"$v_y$", fontsize=14)
     c1.formatter = FormatStrFormatter("%.2f"); c1.update_ticks()
