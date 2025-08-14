@@ -94,9 +94,9 @@ def main():
 
     # Sensibilité à R_ext
     Rext_list = [8.0, 10.0, 12.0, 15.0]
-    res = sensibilite_Rext(U_inf, R, Rext_list, dr_cible=dr)
+    res = sensibilite_Rext(U_inf, R, Rext_list, dr)
     for r1 in res:
-        print(f"R_ext={r1['R_ext']:.1f} | N={r1['N']} | errL2={r1['err_L2']:.2e} | "
+        print(f"R_ext={r1['R_ext']:.1f} | N={r1['N']} | "
           f"Cp_max={r1['epsCp_inf']:.2e} | Cp_moy={r1['epsCp_L2']:.2e} | "
           f"Cd={r1['Cd']:.2e} | Cl={r1['Cl']:.2e}")
 
