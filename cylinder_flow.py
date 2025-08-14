@@ -195,11 +195,9 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
         for j in range(ntheta):
             vtheta[i, j] = -(psi[i+1, j] - psi[i-1, j]) / (2 * dr)
 
-    # vtheta[0, :] = vtheta[-1, :] = 0
-
-    # conditions aux frontières par différences unilatérales
-    vtheta[0, :] = -(psi[1, :] - psi[0, :]) / dr      # r = R
-    vtheta[-1, :] = -(psi[-1, :] - psi[-2, :]) / dr   # r = R_ext
+    # conditions aux frontières par différences unilatérales d'ordre 2
+    vtheta[0,  :] = -(-3.0*psi[0,  :] + 4.0*psi[1,  :] - psi[2,  :]) / (2.0*dr) # r = R
+    vtheta[-1, :] = -( 3.0*psi[-1, :] - 4.0*psi[-2, :] + psi[-3, :]) / (2.0*dr) # r = R_ext
 
     # Conversion vers un systeme cartésien pour représentation dans un graphique
     u = np.zeros_like(psi)

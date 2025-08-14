@@ -73,6 +73,13 @@ def main():
     tracer_lignes_courant(psi, r, theta, R)
     tracer_champ_vitesse(u, v, r, theta, R)
 
+    # Référence analytique et erreurs
+    Cp_th   = 1.0 - 4.0 * (np.sin(theta)**2)
+    err_inf = float(np.max(np.abs(Cp - Cp_th)))          # L∞ (pire cas)
+    err_L2  = float(np.sqrt(np.mean((Cp - Cp_th)**2)))   # RMS
+
+    print(f"Cp: ε_inf={err_inf:.3e}, ε_L2={err_L2:.3e}")
+
     # Analyse de la convergence
     print("\n=== Analyse de convergence ===")
     tailles_maillage = seq_maillages()
