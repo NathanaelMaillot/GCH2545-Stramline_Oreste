@@ -1,3 +1,4 @@
+import numpy as np
 from cylinder_flow import ( 
     creer_maillage,
     construire_matrice_systeme,
@@ -13,7 +14,7 @@ from cylinder_flow import (
     tracer_convergence,
     seq_maillages
 )
-import numpy as np
+
 
 if __name__ == "__main__":
     # Paramètres du problème donnés
@@ -27,8 +28,7 @@ if __name__ == "__main__":
     A, b = construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext)
     psi = resoudre_laplace(A, b, len(r), len(theta))
     vr, vtheta, u, v = calculer_vitesses(psi, r, theta, dr, dtheta)
-    u_n = u / U_inf
-    v_n = v / U_inf
+    u_n, v_n = u / U_inf, v / U_inf
     tracer_cartes_vx_vy(u_n, v_n, r, theta, R)
 
     # Vérification avec la solution exacte
@@ -43,11 +43,12 @@ if __name__ == "__main__":
     tracer_lignes_courant(psi, r, theta, R)
     tracer_champ_vitesse(u, v, r, theta, R)
 
-    #Résulatt de la convergence
+    #Analyse de la convergence
     print("\n=== Analyse de convergence ===")
-    tailles_maillage = seq_maillages()  # utilise k=1.0 par défaut
+    tailles_maillage = seq_maillages()
     print(tailles_maillage)
     nb_points, erreurs, temps = analyse_convergence(tailles_maillage, U_inf, R, R_ext) #calcul L2, temps total, nombre de points
+    
     eoc = np.log(erreurs[1:] / erreurs[:-1]) / np.log(nb_points[1:] / nb_points[:-1])
     print("EOC attendu ≈ -0.50 :", eoc)
     tracer_convergence(nb_points, erreurs, temps)

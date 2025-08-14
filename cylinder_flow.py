@@ -212,16 +212,22 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
     return vr, vtheta, u, v
 
 
-def tracer_cartes_vx_vy(u, v, r, theta, R,niveaux=300, cmap='coolwarm', ranges=((0.0, 1.75), (-0.75, 0.75)), fichier="Figures/vx_vy.png"):
+def tracer_cartes_vx_vy(u, v, r, theta, R,
+                        niveaux=300, cmap='coolwarm', 
+                        ranges=((0.0, 1.75), (-0.75, 0.75)), 
+                        fichier="Figures/vx_vy.png"):
 
-    # grille
+    # grille polaire
     Rg, Tg = np.meshgrid(r, theta, indexing='ij')
+    # grille cartesienne
     X, Y = Rg*np.cos(Tg), Rg*np.sin(Tg)
 
     # champs à tracer
-    u_plot = np.ma.masked_where(Rg <= R, u)
-    v_plot = np.ma.masked_where(Rg <= R, v)
+    mask = Rg <= R
+    u_plot = np.ma.array(u, mask=mask)
+    v_plot = np.ma.array(v, mask=mask)
 
+    # périodicité : répète la première colonne en fin
     Xw = np.concatenate([X, X[:, :1]], axis=1)
     Yw = np.concatenate([Y, Y[:, :1]], axis=1)
     Uw = np.ma.concatenate([u_plot, u_plot[:, :1]], axis=1)
@@ -231,7 +237,7 @@ def tracer_cartes_vx_vy(u, v, r, theta, R,niveaux=300, cmap='coolwarm', ranges=(
     levels_u = np.linspace(vx_min, vx_max, niveaux)
     levels_v = np.linspace(vy_min, vy_max, niveaux)
 
-    fig, axs = plt.subplots(1,2, figsize=(12,5), constrained_layout=True)
+    fig, axs = plt.subplots(1, 2, figsize=(12,5), constrained_layout=True)
     im0 = axs[0].contourf(Xw, Yw, Uw, levels=levels_u, cmap=cmap, extend='both')
     im1 = axs[1].contourf(Xw, Yw, Vw, levels=levels_v, cmap=cmap, extend='both')
 
