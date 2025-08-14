@@ -65,7 +65,7 @@ def main():
     # Analyse de la convergence
     print("\n=== Analyse de convergence ===")
     tailles_maillage = seq_maillages()
-    print(tailles_maillage)
+    print(f"Taille de maillage : {tailles_maillage}")
     # calcul L2, temps total et nombre de points
     nb_points, erreurs, temps = analyse_convergence(tailles_maillage, U_inf, R, R_ext)
 
