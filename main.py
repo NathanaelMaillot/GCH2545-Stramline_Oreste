@@ -13,6 +13,7 @@ from cylinder_flow import (
     analyse_convergence,
     tracer_convergence,
     seq_maillages,
+    sensibilite_Rext
 )
 
 
@@ -90,6 +91,14 @@ def main():
     eoc = np.log(erreurs[1:] / erreurs[:-1]) / np.log(nb_points[1:] / nb_points[:-1])
     print("EOC attendu ≈ -0.50 :", eoc)
     tracer_convergence(nb_points, erreurs, temps)
+
+    Rext_list = [8.0, 10.0, 12.0, 15.0]
+    res = sensibilite_Rext(U_inf, R, Rext_list, dr_cible=dr)
+
+    for r1 in res:
+        print(f"R_ext={r1['R_ext']:.1f} | N={r1['N']} | errL2={r1['err_L2']:.2e} | "
+          f"Cp_max={r1['epsCp_inf']:.2e} | Cp_moy={r1['epsCp_L2']:.2e} | "
+          f"Cd={r1['Cd']:.2e} | Cl={r1['Cl']:.2e}")
 
 
 if __name__ == "__main__":

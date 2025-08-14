@@ -578,3 +578,38 @@ def tracer_convergence(nb_points, erreurs, temps):
     plt.savefig("Figures/Evolution convergence et performance vs nombre point.png", dpi=300)
     plt.tight_layout()
     plt.show()
+
+
+def sensibilite_Rext(U_inf, R, Rext_list, dr_cible):
+    """
+    Étude de sensibilité à R_ext à résolution locale constante (Δr = dr_cible et RΔθ ≈ Δr).
+    Retourne une liste de dicts: R_ext, nr, ntheta, N, err_L2, epsCp_inf, epsCp_L2, Cd, Cl.
+    """
+    import numpy as np
+    res = []
+    ntheta_iso = max(16, int(round(2.0*np.pi*R / dr_cible)))  # R Δθ ≈ Δr  -> nθ ≈ 2πR/Δr
+    for R_ext in Rext_list:
+        nr_iso = max(3, int(round(1 + (R_ext - R) / dr_cible)))  # garde Δr ≈ dr_cible
+        r, theta, dr, dtheta = creer_maillage(R, R_ext, nr_iso, ntheta_iso)
+        A, b = construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext)
+        psi = resoudre_laplace(A, b, nr_iso, ntheta_iso)
+
+        # Erreur globale vs solution analytique
+        psi_ref = solution_analytique(U_inf, r, theta, R)
+        err_L2 = float(erreur_L2(psi, psi_ref))
+
+        # Coefficients pariétaux
+        vr, vtheta, *_ = calculer_vitesses(psi, r, theta, dr, dtheta)
+        Vsurf = np.hypot(vr[0, :], vtheta[0, :])
+        Cp = 1.0 - (Vsurf / U_inf)**2
+        Cd = float(-0.5 * np.trapz(Cp * np.cos(theta), theta))
+        Cl = float(-0.5 * np.trapz(Cp * np.sin(theta), theta))
+
+        # Écart Cp(θ) num. vs théorie
+        Cp_th = 1.0 - 4.0 * (np.sin(theta)**2)
+        epsCp_inf = float(np.max(np.abs(Cp - Cp_th)))
+        epsCp_L2  = float(np.sqrt(np.mean((Cp - Cp_th)**2)))
+
+        res.append(dict(R_ext=R_ext, nr=nr_iso, ntheta=ntheta_iso, N=nr_iso*ntheta_iso,
+                        err_L2=err_L2, epsCp_inf=epsCp_inf, epsCp_L2=epsCp_L2, Cd=Cd, Cl=Cl))
+    return res
