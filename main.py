@@ -54,8 +54,7 @@ def main():
     psi_ext_cible = U_inf * R_ext * np.sin(theta) * (1.0 - (R**2)/(R_ext**2))
     diff_ext      = psi[-1, :] - psi_ext_cible
     eps_bord_Linf = float(np.max(np.abs(diff_ext)))
-    eps_bord_L2   = float(np.sqrt(np.mean(diff_ext**2)))
-    print(f"ε_inf = {eps_bord_Linf:.3e} ; ε_L2 = {eps_bord_L2:.3e}")
+    print(f"ε_inf = {eps_bord_Linf:.3e}")
 
 
     vr, vtheta, u, v = calculer_vitesses(psi, r, theta, dr, dtheta)
