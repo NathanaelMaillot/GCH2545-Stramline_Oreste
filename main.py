@@ -27,8 +27,10 @@ if __name__ == "__main__":
     A, b = construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext)
     psi = resoudre_laplace(A, b, len(r), len(theta))
     vr, vtheta, u, v = calculer_vitesses(psi, r, theta, dr, dtheta)
-    tracer_cartes_vx_vy(u, v, r, theta, R, niveaux=300,
-                    meme_echelle=False, fichier="Figures/vx_vy.png")
+    u_n = u / U_inf
+    v_n = v / U_inf
+    tracer_cartes_vx_vy(u_n, v_n, r, theta, R, niveaux=300, plot_deviation=False,
+                    ranges=((0.0, 1.75), (-0.75, 0.75)), fichier="Figures/vx_vy.png")
 
     # Vérification avec la solution exacte
     psi_exact = solution_analytique(U_inf, r, theta, R)

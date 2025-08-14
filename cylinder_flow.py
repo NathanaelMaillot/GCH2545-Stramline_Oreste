@@ -188,17 +188,23 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
     vr = np.zeros_like(psi)
     vtheta = np.zeros_like(psi)
 
+    # composante radiale via différences centrales
     for i in range(nr):
         for j in range(ntheta):
             jm = (j - 1) % ntheta
             jp = (j + 1) % ntheta
             vr[i, j] = (psi[i, jp] - psi[i, jm]) / (2 * dtheta * r[i])
 
+    # composante angulaire : différences centrales à l'intérieur
     for i in range(1, nr-1):
         for j in range(ntheta):
             vtheta[i, j] = -(psi[i+1, j] - psi[i-1, j]) / (2 * dr)
 
-    vtheta[0, :] = vtheta[-1, :] = 0
+    # vtheta[0, :] = vtheta[-1, :] = 0
+
+    # conditions aux frontières par différences unilatérales
+    vtheta[0, :] = -(psi[1, :] - psi[0, :]) / dr      # r = R
+    vtheta[-1, :] = -(psi[-1, :] - psi[-2, :]) / dr   # r = R_ext
 
     # Conversion vers un systeme cartésien pour représentation dans un graphique
     u = np.zeros_like(psi)
@@ -211,91 +217,36 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
     return vr, vtheta, u, v
 
 
-def tracer_cartes_vx_vy(u, v, r, theta, R, niveaux=200, cmap='coolwarm',
-                        meme_echelle=False, fichier=None):
-    """
-    Affiche deux cartes: v_x (à gauche) et v_y (à droite) sur la grille polaire
-    (r, theta) reprojetée en (x, y). La zone r < R est masquée (cercle blanc).
-    """
-    # Grille XY à partir de la grille polaire
-    Rg, Tg = np.meshgrid(r, theta, indexing='ij')  # mêmes shapes que u, v
-    X = Rg * np.cos(Tg)
-    Y = Rg * np.sin(Tg)
+def tracer_cartes_vx_vy(u, v, r, theta, R,
+                        niveaux=200, cmap='coolwarm',
+                        plot_deviation=False, U_inf=10,
+                        ranges=((0.0, 1.75), (-0.75, 0.75)), fichier=None):
 
-    # Masquer l'intérieur du cylindre
-    masque = Rg <= (R + 1e-12)
-    u_m = np.ma.masked_where(masque, u)
-    v_m = np.ma.masked_where(masque, v)
+    # grille
+    Rg, Tg = np.meshgrid(r, theta, indexing='ij')
+    X = Rg*np.cos(Tg); Y = Rg*np.sin(Tg)
 
-    # Échelles de couleurs (symétriques autour de 0)
-    if meme_echelle:
-        vmax = np.nanmax([np.nanmax(np.abs(u_m)), np.nanmax(np.abs(v_m))])
-        vlims_u = vlims_v = (-vmax, vmax)
-    else:
-        vmax_u = np.nanmax(np.abs(u_m))
-        vmax_v = np.nanmax(np.abs(v_m))
-        vlims_u = (-vmax_u, vmax_u)
-        vlims_v = (-vmax_v, vmax_v)
+    # champs à tracer (normalisés ou pas)
+    u_plot = np.ma.masked_where(Rg <= R, u)
+    v_plot = np.ma.masked_where(Rg <= R, v)
 
-    # Figure
-    fig, axs = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
+    # --- CLOSE THE PERIODIC SEAM ---
+    Xw = np.concatenate([X, X[:, :1]], axis=1)
+    Yw = np.concatenate([Y, Y[:, :1]], axis=1)
+    Uw = np.ma.concatenate([u_plot, u_plot[:, :1]], axis=1)
+    Vw = np.ma.concatenate([v_plot, v_plot[:, :1]], axis=1)
 
-    # im0 = axs[0].contourf(X, Y, u_m, levels=niveaux, cmap=cmap,vmin=vlims_u[0], vmax=vlims_u[1])
-    # axs[0].set_aspect('equal'); axs[0].set_title(r"$v_x$ Component")
-    # axs[0].set_xlabel("Position X"); axs[0].set_ylabel("Position Y")
-    # axs[0].set_xlim(-r.max(), r.max()); axs[0].set_ylim(-r.max(), r.max())
-    # c0 = fig.colorbar(im0, ax=axs[0]); c0.set_label(r"$v_x$")
+    levels_u = np.linspace(0.0, 1.75, 200)     # tes bornes souhaitées
+    levels_v = np.linspace(-0.75, 0.75, 200)
 
-    # im1 = axs[1].contourf(X, Y, v_m, levels=niveaux, cmap=cmap,vmin=vlims_v[0], vmax=vlims_v[1])
-    # axs[1].set_aspect('equal'); axs[1].set_title(r"$v_y$ Component")
-    # axs[1].set_xlabel("Position X"); axs[1].set_ylabel("Position Y")
-    # axs[1].set_xlim(-r.max(), r.max()); axs[1].set_ylim(-r.max(), r.max())
-    # c1 = fig.colorbar(im1, ax=axs[1]); c1.set_label(r"$v_y$")
-
-    cmap_u = plt.get_cmap(cmap, niveaux).copy()
-    cmap_u.set_bad(color="white")
-    triang = mtri.Triangulation(X.ravel(), Y.ravel())
-    mask_nodes = masque.ravel()
-    triang.set_mask(np.any(mask_nodes[triang.triangles], axis=1))
-    im0 = axs[0].tricontourf(
-        triang,
-        u_m.filled(np.nan).ravel(),
-        levels=niveaux,
-        cmap=cmap_u,
-        vmin=vlims_u[0],
-        vmax=vlims_u[1],
-    )
-    axs[0].set_aspect("equal")
-    axs[0].set_title(r"$v_x$ Component")
-    axs[0].set_xlabel("Position X")
-    axs[0].set_ylabel("Position Y")
-    axs[0].set_xlim(-r.max(), r.max())
-    axs[0].set_ylim(-r.max(), r.max())
-    c0 = fig.colorbar(im0, ax=axs[0])
-    c0.set_label(r"$v_x$")
-
-    cmap_v = plt.get_cmap(cmap, niveaux).copy()
-    cmap_v.set_bad(color="white")
-    im1 = axs[1].tricontourf(
-        triang,
-        v_m.filled(np.nan).ravel(),
-        levels=niveaux,
-        cmap=cmap_v,
-        vmin=vlims_v[0],
-        vmax=vlims_v[1],
-    )
-    axs[1].set_aspect("equal")
-    axs[1].set_title(r"$v_y$ Component")
-    axs[1].set_xlabel("Position X")
-    axs[1].set_ylabel("Position Y")
-    axs[1].set_xlim(-r.max(), r.max())
-    axs[1].set_ylim(-r.max(), r.max())
-    c1 = fig.colorbar(im1, ax=axs[1])
-    c1.set_label(r"$v_y$")
-
-    os.makedirs("Figures", exist_ok=True)
-    if fichier:
-        plt.savefig(fichier, dpi=300, bbox_inches="tight")
+    fig, axs = plt.subplots(1,2, figsize=(12,5), constrained_layout=True)
+    im0 = axs[0].contourf(Xw, Yw, Uw, levels=levels_u, cmap='coolwarm', extend='both')
+    im1 = axs[1].contourf(Xw, Yw, Vw, levels=levels_v, cmap='coolwarm', extend='both')
+    for ax in axs:
+        ax.set_aspect('equal'); ax.set_xlim(-r.max(), r.max()); ax.set_ylim(-r.max(), r.max())
+        ax.set_xlabel("Position X"); ax.set_ylabel("Position Y")
+    fig.colorbar(im0, ax=axs[0]).set_label(r"$v_x$")
+    fig.colorbar(im1, ax=axs[1]).set_label(r"$v_y$")
     plt.show()
 
 
