@@ -5,12 +5,7 @@ import matplotlib.tri as mtri
 import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
-
-
-
-
-#question pour le prof: 
-'préferer creer classe pr parametre ou peut directement mettre comme valeur '
+from matplotlib.ticker import FormatStrFormatter
 
 
 def creer_maillage(R, R_ext, nr, ntheta):
@@ -217,37 +212,56 @@ def calculer_vitesses(psi, r, theta, dr, dtheta):
     return vr, vtheta, u, v
 
 
-def tracer_cartes_vx_vy(u, v, r, theta, R,
-                        niveaux=200, cmap='coolwarm',
-                        plot_deviation=False, U_inf=10,
-                        ranges=((0.0, 1.75), (-0.75, 0.75)), fichier=None):
+def tracer_cartes_vx_vy(u, v, r, theta, R,niveaux=300, cmap='coolwarm', ranges=((0.0, 1.75), (-0.75, 0.75)), fichier="Figures/vx_vy.png"):
 
     # grille
     Rg, Tg = np.meshgrid(r, theta, indexing='ij')
-    X = Rg*np.cos(Tg); Y = Rg*np.sin(Tg)
+    X, Y = Rg*np.cos(Tg), Rg*np.sin(Tg)
 
-    # champs à tracer (normalisés ou pas)
+    # champs à tracer
     u_plot = np.ma.masked_where(Rg <= R, u)
     v_plot = np.ma.masked_where(Rg <= R, v)
 
-    # --- CLOSE THE PERIODIC SEAM ---
     Xw = np.concatenate([X, X[:, :1]], axis=1)
     Yw = np.concatenate([Y, Y[:, :1]], axis=1)
     Uw = np.ma.concatenate([u_plot, u_plot[:, :1]], axis=1)
     Vw = np.ma.concatenate([v_plot, v_plot[:, :1]], axis=1)
 
-    levels_u = np.linspace(0.0, 1.75, 200)     # tes bornes souhaitées
-    levels_v = np.linspace(-0.75, 0.75, 200)
+    (vx_min, vx_max), (vy_min, vy_max) = ranges
+    levels_u = np.linspace(vx_min, vx_max, niveaux)
+    levels_v = np.linspace(vy_min, vy_max, niveaux)
 
     fig, axs = plt.subplots(1,2, figsize=(12,5), constrained_layout=True)
-    im0 = axs[0].contourf(Xw, Yw, Uw, levels=levels_u, cmap='coolwarm', extend='both')
-    im1 = axs[1].contourf(Xw, Yw, Vw, levels=levels_v, cmap='coolwarm', extend='both')
+    im0 = axs[0].contourf(Xw, Yw, Uw, levels=levels_u, cmap=cmap, extend='both')
+    im1 = axs[1].contourf(Xw, Yw, Vw, levels=levels_v, cmap=cmap, extend='both')
+
     for ax in axs:
-        ax.set_aspect('equal'); ax.set_xlim(-r.max(), r.max()); ax.set_ylim(-r.max(), r.max())
-        ax.set_xlabel("Position X"); ax.set_ylabel("Position Y")
-    fig.colorbar(im0, ax=axs[0]).set_label(r"$v_x$")
-    fig.colorbar(im1, ax=axs[1]).set_label(r"$v_y$")
+        ax.set_aspect('equal')
+        ax.set_xlim(-r.max(), r.max())
+        ax.set_ylim(-r.max(), r.max())
+        ax.set_xlabel("Position X")
+        ax.set_ylabel("Position Y")
+
+    axs[0].set_title(r"$v_x$ Component", fontsize=16, pad=8)
+    axs[1].set_title(r"$v_y$ Component", fontsize=16, pad=8)
+    
+    # vx : ticks 0.00 → 1.75
+    c0 = fig.colorbar(im0, ax=axs[0], ticks=np.linspace(vx_min, vx_max, 8))
+    c0.set_label(r"$v_x$", fontsize=14)
+    c0.formatter = FormatStrFormatter("%.2f"); c0.update_ticks()
+
+    # vy : ticks -0.75 → 0.75 avec 0 centré
+    c1 = fig.colorbar(im1, ax=axs[1], ticks=np.linspace(vy_min, vy_max, 7))
+    c1.set_label(r"$v_y$", fontsize=14)
+    c1.formatter = FormatStrFormatter("%.2f"); c1.update_ticks()
+
+    if fichier:
+        plt.savefig(fichier, dpi=300, bbox_inches="tight")
     plt.show()
+
+    # fig.colorbar(im0, ax=axs[0]).set_label(r"$v_x$")
+    # fig.colorbar(im1, ax=axs[1]).set_label(r"$v_y$")
+    # plt.show()
 
 
 def tracer_champ_vitesse(u, v, r, theta, R, saut=2):

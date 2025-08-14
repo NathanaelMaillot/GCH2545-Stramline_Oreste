@@ -29,8 +29,7 @@ if __name__ == "__main__":
     vr, vtheta, u, v = calculer_vitesses(psi, r, theta, dr, dtheta)
     u_n = u / U_inf
     v_n = v / U_inf
-    tracer_cartes_vx_vy(u_n, v_n, r, theta, R, niveaux=300, plot_deviation=False,
-                    ranges=((0.0, 1.75), (-0.75, 0.75)), fichier="Figures/vx_vy.png")
+    tracer_cartes_vx_vy(u_n, v_n, r, theta, R)
 
     # Vérification avec la solution exacte
     psi_exact = solution_analytique(U_inf, r, theta, R)
