@@ -46,6 +46,10 @@ def main():
     r, theta, dr, dtheta = creer_maillage(R, R_ext, 50, 80)
     A, b = construire_matrice_systeme(r, theta, dr, dtheta, U_inf, R, R_ext)
     psi = resoudre_laplace(A, b, len(r), len(theta))
+    # Vérification CAL à la paroi r = R  (i = 0)
+    eps_paroi_max = float(np.max(np.abs(psi[0, :])))
+    print(f"ε_max(paroi) = {eps_paroi_max:.3e}")
+
     vr, vtheta, u, v = calculer_vitesses(psi, r, theta, dr, dtheta)
     u_n, v_n = u / U_inf, v / U_inf  # vitesses normalisées
     tracer_cartes_vx_vy(u_n, v_n, r, theta, R)
